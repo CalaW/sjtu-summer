@@ -58,7 +58,7 @@ def read_intrinsics(filename):
         )
         return intrinsics
 
-    except:
+    except FileNotFoundError:
         print(f"No json file {json_name} found")
 
 
