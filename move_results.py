@@ -1,23 +1,24 @@
-import os
 import shutil
+from pathlib import Path
 
 # Define the root directory where the folders are located
-root_dir = "vis"
+root_dir = Path("vis")
 
-# Iterate through each directory in the root directory
-for folder_name in os.listdir(root_dir):
-    folder_path = os.path.join(root_dir, folder_name)
-    # Check if it's a directory
-    if os.path.isdir(folder_path):
+for subj_dir in root_dir.glob("*/"):
+    # Iterate through each directory in the root directory
+    for folder_path in subj_dir.glob("*d/*/"):
+        print(folder_path)
         # Iterate through each file in the directory
-        for file_name in os.listdir(folder_path):
+        for file_path in folder_path.glob("*"):
+            print(file_path)
             # Check if the file is a jpg or json file
-            if file_name.endswith(".jpg") or file_name.endswith(".json"):
-                # Construct the new file name using the parent folder's name
-                new_file_name = folder_name + file_name[-4:]
+            if file_path.suffix in (".jpg", ".json"):
                 # Construct the source file path
-                src_file_path = os.path.join(folder_path, file_name)
+                src_file_path = file_path
                 # Construct the destination file path
-                dest_file_path = os.path.join(root_dir, new_file_name)
+                dest_file_path = folder_path.with_suffix(file_path.suffix)
                 # Move and rename the file
                 shutil.move(src_file_path, dest_file_path)
+                print(f"Moved {src_file_path} to {dest_file_path}")
+        shutil.rmtree(folder_path)
+        print(f"Removed {folder_path}")

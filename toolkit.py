@@ -6,7 +6,7 @@ from os.path import dirname
 import cv2
 import numpy as np
 
-dataroot = "/Volumes/Samsung T7/2024SummerSchoolData/"
+datasetRoot = "/Volumes/Samsung T7/2024SummerSchoolData/"
 
 
 def read_label(txt_path):
@@ -64,11 +64,11 @@ def read_intrinsics(filename):
 
 if __name__ == "__main__":
     # read labels
-    label, sub_id = read_label(dataroot + "labels.txt")
+    label, sub_id = read_label(datasetRoot + "labels.txt")
 
     # take a look of a video
     deom_id = 0
-    mp4 = glob(dataroot + f"/*/{sub_id[deom_id]:05d}/*.mp4")[0]
+    mp4 = glob(datasetRoot + f"/*/{sub_id[deom_id]:05d}/*.mp4")[0]
     left_arm_label, right_arm_label = label[deom_id][1], label[deom_id][2]
     cap = cv2.VideoCapture(mp4)
 
