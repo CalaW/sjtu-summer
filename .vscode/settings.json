@@ -1,9 +1,15 @@
 {
     "cSpell.words": [
+        "arcsin",
         "astype",
         "imread",
         "imresize",
         "imshow",
-        "inferencer"
+        "inferencer",
+        "keypoint",
+        "keypoints",
+        "linalg",
+        "mmpose",
+        "savgol"
     ]
 }

@@ -1,5 +1,6 @@
 mmpose-dev-1.x/
 vis/
+vis_result/
 rgbd-pose3d-master/weights
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,macos,windows,linux,visualstudiocode

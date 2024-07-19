@@ -8,7 +8,7 @@ from toolkit import datasetRoot, decode_depth_16, read_label
 
 if __name__ == "__main__":
     label, sub_id = read_label(datasetRoot + "labels.txt")
-    for sub_idx in range(len(sub_id)):
+    for sub_idx in [30]:
         mp4 = next(Path(datasetRoot).glob(f"*/{sub_id[sub_idx]:05d}/*.mp4"))
         cap = cv2.VideoCapture(str(mp4))
         inferencer_2d = MMPoseInferencer("human")
@@ -29,10 +29,14 @@ if __name__ == "__main__":
 
             color = cv2.rotate(color, cv2.ROTATE_90_COUNTERCLOCKWISE)
             depth = cv2.rotate(depth, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            dir = f"vis/{sub_id[sub_idx]}/3d/{i:05d}"
-            result_generator_3d = inferencer_3d(color, vis_out_dir=dir, pred_out_dir=dir)
-            result_3d = next(result_generator_3d)
+            # dir = f"vis/{sub_id[sub_idx]}/3d/{i:05d}"
+            # result_generator_3d = inferencer_3d(color, vis_out_dir=dir, pred_out_dir=dir)
+            # result_3d = next(result_generator_3d)
             dir = f"vis/{sub_id[sub_idx]}/2d/{i:05d}"
-            result_generator_2d = inferencer_2d(color, vis_out_dir=dir, pred_out_dir=dir)
+            result_generator_2d = inferencer_2d(
+                color,
+                # vis_out_dir=dir,
+                pred_out_dir=dir,
+            )
             result_2d = next(result_generator_2d)
             i += 1
