@@ -1,96 +1,63 @@
-import json
-
+import matplotlib.pyplot as plt
 import numpy as np
-from scipy.signal import savgol_filter
 
-from load_data import get_best_pred, load_data
-
-keypoints = dict[str, list]
+from load_data import get_best_pred, keypoints, load_data
+from lpf import LowPassFilter
 
 
 def get_arm_len(frames: list[list[keypoints]]) -> tuple:
     l_arm, r_arm = [], []
     for kps in frames:
-        cur_kp = get_best_pred(kps)
+        cur_kp = get_best_pred(kps)["keypoints"]
         r_arm.append(np.linalg.norm(np.array(cur_kp[6]) - np.array(cur_kp[10])))
         l_arm.append(np.linalg.norm(np.array(cur_kp[5]) - np.array(cur_kp[9])))
-    return (np.mean(r_arm), np.mean(l_arm))
+    return np.mean(r_arm), np.mean(l_arm)
 
 
-def get_arm_angle(cur_kp, r_arm, l_arm):
-    cur_r_arm = (cur_kp[6][1] - cur_kp[10][1]) / r_arm
-    if cur_r_arm < -1:
-        cur_r_arm = -1
-    elif cur_r_arm > 1:
-        cur_r_arm = 1
-    cur_l_arm = (cur_kp[5][1] - cur_kp[9][1]) / l_arm
-    if cur_l_arm < -1:
-        cur_l_arm = -1
-    elif cur_l_arm > 1:
-        cur_l_arm = 1
+def calculate_arm_angles(cur_kp, r_len, l_len) -> tuple[float, float]:
+    # Helper function to calculate angle based on arm difference
+    def calc_angle(diff, arm_length) -> tuple[float, float]:
+        arm_ratio = np.clip(diff / arm_length, -1, 1)  # Ensure the ratio is within [-1, 1]
+        angle = np.pi / 2 - np.arcsin(abs(arm_ratio))
+        if arm_ratio > 0:
+            angle += np.pi / 2  # Adjust angle if arm_ratio is positive
+        return arm_ratio, np.degrees(angle)
 
-    r_angle = np.pi / 2 - np.arcsin(abs(cur_r_arm))
-    if cur_r_arm > 0:
-        r_angle = np.pi / 2 + np.arcsin(abs(cur_r_arm))
-    l_angle = np.pi / 2 - np.arcsin(abs(cur_l_arm))
-    if cur_l_arm > 0:
-        l_angle = np.pi / 2 + np.arcsin(abs(cur_l_arm))
+    # Calculate right and left arm ratios and angles
+    cur_r_arm, r_angle = calc_angle(cur_kp[6][1] - cur_kp[10][1], r_len)
+    cur_l_arm, l_angle = calc_angle(cur_kp[5][1] - cur_kp[9][1], l_len)
 
-    return [cur_r_arm, cur_l_arm, r_angle, l_angle]
+    return r_angle, l_angle
 
 
-def track_pose_2D(path, inferencer):
-    all_kp = []
-    cap = cv2.VideoCapture(path)
+def track_arm_angles(frames: list[list[keypoints]], initial_frames: int = 5) -> tuple[list, list]:
+    r_len, l_len = get_arm_len(frames[:initial_frames])
+    r_angles = []
+    l_angles = []
 
-    [r_arm, l_arm] = get_arm_len(path, inferencer)
-    r_ratio = []
-    l_ratio = []
-    r_angle = []
-    l_angle = []
-
-    i = 0
-    while True:
-        try:
-            ret, frame = cap.read()
-            if ret:
-                keypoints = get_kp(frame, inferencer)
-
-                [cur_r_ratio, cur_l_ratio, cur_r_angle, cur_l_angle] = get_arm_angle(
-                    keypoints, r_arm, l_arm
-                )
-                r_ratio.append(cur_r_ratio)
-                l_ratio.append(cur_l_ratio)
-                r_angle.append(cur_r_angle)
-                l_angle.append(cur_l_angle)
-            else:
-                print("Failed to capture frame")
-                break
-        except RuntimeError as e:
-            print("An error occurred", e)
-
-        i += 1
-        if i % 10 == 0:
-            print(str(i) + " frame completed")
-
-    cap.release()
-
-    return [
-        savgol_filter(r_ratio, 5, 2),
-        savgol_filter(l_ratio, 5, 2),
-        savgol_filter(r_angle, 5, 2),
-        savgol_filter(l_angle, 5, 2),
-    ]
+    for kps in frames:
+        cur_kp = get_best_pred(kps)["keypoints"]
+        cur_r_angle, cur_l_angle = calculate_arm_angles(cur_kp, r_len, l_len)
+        r_angles.append(cur_r_angle)
+        l_angles.append(cur_l_angle)
+    return r_angles, l_angles
 
 
 if __name__ == "__main__":
-    inferencer = MMPoseInferencer("human")
-    path = "000.mp4"
-    [a, b, c, d] = track_pose_2D(path, inferencer)
-    # np.save('a1.npy',a)
-    # np.save('a2.npy',b)
-    # np.save('array1.npy',c)
-    # np.save('array2.npy',d)
-    plt.plot(np.degrees(c))
-    plt.plot(np.degrees(d))
-    plt.show()
+    for i, sample_data in load_data().items():
+        sample_data = load_data()[7]
+        r_angles, l_angles = track_arm_angles(sample_data)
+        filtered_r_angles, filtered_l_angles = [], []
+        lpf = LowPassFilter(
+            sampling_frequency=30, damping_frequency=3, damping_intensity=0.5, outlier_threshold=60
+        )
+        for angle in l_angles:
+            filtered_l_angles.append(lpf.update(angle))
+        for angle in r_angles:
+            filtered_r_angles.append(lpf.update(angle))
+        plt.figure()
+        plt.plot(r_angles)
+        plt.plot(filtered_r_angles)
+        # plt.savefig(f"{i}.pdf")
+        plt.show()
+        break

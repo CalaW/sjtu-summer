@@ -4,12 +4,14 @@ from pathlib import Path
 
 import numpy as np
 
+keypoints = dict[str, list]
+
 # Define the directory where the folders are located
 root_dir = Path("vis_result")
 save_file = root_dir / "data.pkl"
 
 
-def load_data() -> dict[int, list]:
+def load_data() -> dict[int, list[list[keypoints]]]:
     with save_file.open("rb") as f:
         data_dict = pkl.load(f)
     return data_dict
