@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "arccos",
         "arcsin",
         "astype",
         "imread",
@@ -10,6 +11,7 @@
         "keypoints",
         "linalg",
         "mmpose",
-        "savgol"
+        "savgol",
+        "sktime"
     ]
 }

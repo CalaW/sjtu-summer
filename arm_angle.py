@@ -18,9 +18,7 @@ def calculate_arm_angles(cur_kp, r_len, l_len) -> tuple[float, float]:
     # Helper function to calculate angle based on arm difference
     def calc_angle(diff, arm_length) -> tuple[float, float]:
         arm_ratio = np.clip(diff / arm_length, -1, 1)  # Ensure the ratio is within [-1, 1]
-        angle = np.pi / 2 - np.arcsin(abs(arm_ratio))
-        if arm_ratio > 0:
-            angle += np.pi / 2  # Adjust angle if arm_ratio is positive
+        angle = np.arccos(abs(arm_ratio))
         return arm_ratio, np.degrees(angle)
 
     # Calculate right and left arm ratios and angles
@@ -45,7 +43,7 @@ def track_arm_angles(frames: list[list[keypoints]], initial_frames: int = 5) -> 
 
 if __name__ == "__main__":
     for i, sample_data in load_data().items():
-        sample_data = load_data()[7]
+        # sample_data = load_data()[5]
         r_angles, l_angles = track_arm_angles(sample_data)
         filtered_r_angles, filtered_l_angles = [], []
         lpf = LowPassFilter(
@@ -53,11 +51,17 @@ if __name__ == "__main__":
         )
         for angle in l_angles:
             filtered_l_angles.append(lpf.update(angle))
+        lpf.reset()
         for angle in r_angles:
             filtered_r_angles.append(lpf.update(angle))
         plt.figure()
-        plt.plot(r_angles)
-        plt.plot(filtered_r_angles)
-        # plt.savefig(f"{i}.pdf")
-        plt.show()
-        break
+        plt.plot(r_angles, label="Raw Right", alpha=0.5)
+        plt.plot(filtered_r_angles, label="Filtered Right")
+        plt.plot(l_angles, label="Raw Left", alpha=0.5)
+        plt.plot(filtered_l_angles, label="Filtered Left")
+        plt.legend()
+        plt.grid()
+        # plt.show()
+        # break
+        plt.savefig(f"{i}.pdf")
+        plt.close()

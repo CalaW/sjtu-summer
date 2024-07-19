@@ -3,16 +3,17 @@ from pathlib import Path
 
 import cv2
 from mmpose.apis import MMPoseInferencer
+from tqdm import tqdm
 
 from toolkit import datasetRoot, decode_depth_16, read_label
 
 if __name__ == "__main__":
     label, sub_id = read_label(datasetRoot + "labels.txt")
-    for sub_idx in [30]:
+    inferencer_2d = MMPoseInferencer("human")
+    # inferencer_3d = MMPoseInferencer(pose3d="human3d")
+    for sub_idx in tqdm([5, 29, 41, 43, 53, 55, 66, 81, 94, 104]):
         mp4 = next(Path(datasetRoot).glob(f"*/{sub_id[sub_idx]:05d}/*.mp4"))
         cap = cv2.VideoCapture(str(mp4))
-        inferencer_2d = MMPoseInferencer("human")
-        inferencer_3d = MMPoseInferencer(pose3d="human3d")
 
         i = 0
         while True:

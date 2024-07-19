@@ -23,6 +23,10 @@ class LowPassFilter:
         b1 = 1.0 - a1
         return a1, b1
 
+    def reset(self):
+        self.filtered_old_value = None
+        self.old_value = None
+
     def is_outlier(self, new_value):
         if self.filtered_old_value is None:
             return False  # Not an outlier if it's the first value
