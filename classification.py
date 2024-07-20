@@ -10,6 +10,7 @@ from sktime.classification.kernel_based import RocketClassifier, TimeSeriesSVC
 from sktime.classification.shapelet_based import ShapeletTransformClassifier
 from sktime.classification.sklearn import RotationForest
 from sktime.transformations.panel.padder import PaddingTransformer
+from sktime.utils import mlflow_sktime
 
 from arm_angle import track_arm_angles
 from load_data import load_data, load_split
@@ -77,3 +78,6 @@ print(acc)
 # correct if y_pred and y_test are 0, or y_pred, y_test are both not 0
 binary_acc = np.mean((y_pred == 0) & (y_test == 0) | ((y_pred != 0) & (y_test != 0)))
 print(binary_acc)
+
+mlflow_sktime.save_model(sktime_model=classifier, path="model")
+# loaded_model = mlflow_sktime.load_model(model_uri=model_path)
