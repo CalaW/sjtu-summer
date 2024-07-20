@@ -11,6 +11,7 @@
         "keypoints",
         "linalg",
         "mmpose",
+        "proba",
         "savgol",
         "sktime"
     ]

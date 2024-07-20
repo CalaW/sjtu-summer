@@ -3,18 +3,28 @@ import pickle as pkl
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 keypoints = dict[str, list]
 
 # Define the directory where the folders are located
 root_dir = Path("vis_result")
 save_file = root_dir / "data.pkl"
+label_file = root_dir / "labels.txt"
+split_file = root_dir / "split.json"
 
 
-def load_data() -> dict[int, list[list[keypoints]]]:
+def load_data() -> tuple[dict[int, list[list[keypoints]]], dict[str, list[int]]]:
     with save_file.open("rb") as f:
         data_dict = pkl.load(f)
-    return data_dict
+    with label_file.open() as f:
+        label = pd.read_csv(f, sep="\t", index_col=0)
+    return data_dict, label.T.to_dict()
+
+
+def load_split() -> dict[str, list[int]]:
+    with split_file.open() as f:
+        return json.load(f)
 
 
 def get_best_pred(data: list[dict]) -> dict:
@@ -42,5 +52,14 @@ if __name__ == "__main__":
 
     with save_file.open("wb") as f:
         pkl.dump(data_dict, f)
+
+    subj_ids = list(data_dict.keys())
+    np.random.shuffle(subj_ids)
+    split = {
+        "train": subj_ids[: int(0.8 * len(subj_ids))],
+        "test": subj_ids[int(0.8 * len(subj_ids)) :],
+    }
+    with split_file.open("w") as f:
+        json.dump(split, f)
 
     print(human_num)
