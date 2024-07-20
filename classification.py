@@ -74,3 +74,6 @@ classifier.fit(X_train, y_train)
 y_pred = classifier.predict(X_test)
 acc = np.mean(y_pred == y_test)
 print(acc)
+# correct if y_pred and y_test are 0, or y_pred, y_test are both not 0
+binary_acc = np.mean((y_pred == 0) & (y_test == 0) | ((y_pred != 0) & (y_test != 0)))
+print(binary_acc)
