@@ -16,68 +16,74 @@ from arm_angle import track_arm_angles
 from load_data import load_data, load_split
 from lpf import LowPassFilter
 
-data_dict, label = load_data()
-split = load_split()
 
-kp_train = {i: data_dict[i] for i in split["train"]}
-kp_test = {i: data_dict[i] for i in split["test"]}
-label_train = {i: label[i] for i in split["train"]}
-label_test = {i: label[i] for i in split["test"]}
+def get_train_test_data():
+    data_dict, label = load_data()
+    split = load_split()
 
-lpf = LowPassFilter(
-    sampling_frequency=30, damping_frequency=3, damping_intensity=0.5, outlier_threshold=60
-)
+    kp_train = {i: data_dict[i] for i in split["train"]}
+    kp_test = {i: data_dict[i] for i in split["test"]}
+    label_train = {i: label[i] for i in split["train"]}
+    label_test = {i: label[i] for i in split["test"]}
 
-X_train, y_train = {}, []
-X_test, y_test = {}, []
-for kp, label_dict, X, y in (
-    (kp_train, label_train, X_train, y_train),
-    (kp_test, label_test, X_test, y_test),
-):
-    for i, sample_data in kp.items():
-        r_angles, l_angles = track_arm_angles(sample_data)
-        filtered_r_angles, filtered_l_angles = [], []
-        lpf.reset()
-        for angle in l_angles:
-            filtered_l_angles.append(lpf.update(angle))
-        lpf.reset()
-        for angle in r_angles:
-            filtered_r_angles.append(lpf.update(angle))
-        for j, angle in enumerate(filtered_r_angles):
-            X[(f"{i}L", j)] = [angle]
-        for j, angle in enumerate(filtered_l_angles):
-            X[(f"{i}R", j)] = [angle]
-        y.append(label_dict[i]["RARM"])
-        y.append(label_dict[i]["LARM"])
+    lpf = LowPassFilter(
+        sampling_frequency=30, damping_frequency=3, damping_intensity=0.5, outlier_threshold=60
+    )
 
-X_train = pd.DataFrame(X_train).T
-X_test = pd.DataFrame(X_test).T
-y_train = np.array(y_train)
-y_test = np.array(y_test)
+    X_train, y_train = {}, []
+    X_test, y_test = {}, []
+    for kp, label_dict, X, y in (
+        (kp_train, label_train, X_train, y_train),
+        (kp_test, label_test, X_test, y_test),
+    ):
+        for i, sample_data in kp.items():
+            r_angles, l_angles = track_arm_angles(sample_data)
+            filtered_r_angles, filtered_l_angles = [], []
+            lpf.reset()
+            for angle in l_angles:
+                filtered_l_angles.append(lpf.update(angle))
+            lpf.reset()
+            for angle in r_angles:
+                filtered_r_angles.append(lpf.update(angle))
+            for j, angle in enumerate(filtered_r_angles):
+                X[(f"{i}L", j)] = [angle]
+            for j, angle in enumerate(filtered_l_angles):
+                X[(f"{i}R", j)] = [angle]
+            y.append(label_dict[i]["RARM"])
+            y.append(label_dict[i]["LARM"])
 
-classifier = DummyClassifier(strategy="prior")  # 0.619
-classifier = PaddingTransformer() * KNeighborsTimeSeriesClassifier()  # 0.857
-classifier = TimeSeriesSVC()  # 0.761
-classifier = PaddingTransformer() * TimeSeriesForestClassifier()  # 0.880
-classifier = PaddingTransformer() * ResNetClassifier(n_epochs=20)  # 0.69
-classifier = PaddingTransformer() * InceptionTimeClassifier(n_epochs=20, batch_size=16)  # 0.666
-classifier = PaddingTransformer() * HIVECOTEV2()  # 0.762
-classifier = PaddingTransformer() * ShapeletTransformClassifier(
-    estimator=RotationForest(n_estimators=3),
-    n_shapelet_samples=100,
-    max_shapelets=10,
-    batch_size=20,
-)  # 0.857
+    X_train = pd.DataFrame(X_train).T
+    X_test = pd.DataFrame(X_test).T
+    y_train = np.array(y_train)
+    y_test = np.array(y_test)
+    return X_train, y_train, X_test, y_test
 
-classifier = PaddingTransformer() * RocketClassifier()  # 0.928
 
-classifier.fit(X_train, y_train)
-y_pred = classifier.predict(X_test)
-acc = np.mean(y_pred == y_test)
-print(acc)
-# correct if y_pred and y_test are 0, or y_pred, y_test are both not 0
-binary_acc = np.mean((y_pred == 0) & (y_test == 0) | ((y_pred != 0) & (y_test != 0)))
-print(binary_acc)
+if __name__ == "__main__":
+    X_train, y_train, X_test, y_test = get_train_test_data()
 
-mlflow_sktime.save_model(sktime_model=classifier, path="model")
-# loaded_model = mlflow_sktime.load_model(model_uri=model_path)
+    # classifier = DummyClassifier(strategy="prior")  # 0.619
+    # classifier = PaddingTransformer() * KNeighborsTimeSeriesClassifier()  # 0.857
+    # classifier = TimeSeriesSVC()  # 0.761
+    # classifier = PaddingTransformer() * TimeSeriesForestClassifier()  # 0.880
+    # classifier = PaddingTransformer() * ResNetClassifier(n_epochs=20)  # 0.69
+    # classifier = PaddingTransformer() * InceptionTimeClassifier(n_epochs=20, batch_size=16)  # 0.666
+    # classifier = PaddingTransformer() * HIVECOTEV2()  # 0.762
+    # classifier = PaddingTransformer() * ShapeletTransformClassifier(
+    #     estimator=RotationForest(n_estimators=3),
+    #     n_shapelet_samples=100,
+    #     max_shapelets=10,
+    #     batch_size=20,
+    # )  # 0.857
+
+    classifier = PaddingTransformer() * RocketClassifier()  # 0.928
+
+    classifier.fit(X_train, y_train)
+    y_pred = classifier.predict(X_test)
+    acc = np.mean(y_pred == y_test)
+    print(acc)
+    # correct if y_pred and y_test are 0, or y_pred, y_test are both not 0
+    binary_acc = np.mean((y_pred == 0) & (y_test == 0) | ((y_pred != 0) & (y_test != 0)))
+    print(binary_acc)
+
+    # mlflow_sktime.save_model(sktime_model=classifier, path="model")
