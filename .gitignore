@@ -2,6 +2,8 @@ mmpose-dev-1.x/
 vis/
 vis_result/*
 !vis_result/data.pkl
+!vis_result/labels.txt
+!vis_result/split.json
 rgbd-pose3d-master/weights
 /*.pdf
 
